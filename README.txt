@@ -1,5 +1,5 @@
-数据库课程设计
+Database Management System
 
-张轩 5080309672
-阎立 5080309073
-朱崎峰 5080309079
+Implimented in Java
+
+By: Li Yan, Xuan Zhang, Qifeng Zhu
