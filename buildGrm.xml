@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project default="buildGrm" basedir=".">
+	<target name="buildGrm" description="Generate a Grm parser." 
+		depends="delete,generate_Grm"/>
+	
+	<target name="delete" description="Delete generated files.">
+		<delete file="src/Parse/Grm.java"/>
+		<delete file="src/Parse/sym.java"/>
+	</target>
+	
+	<target name="generate_Grm" description="Generate a Grm parser.">
+		<java classname="java_cup.Main" fork="true" dir="src/Parse">
+			<arg value="-package"/>
+			<arg value="Parse"/>
+			<arg value="-parser"/>
+			<arg value="Grm"/>
+			<arg value="-dump_grammar"/>
+			<arg value="-dump_states"/>
+			<!--<arg value="-nowarn"/>
+			<arg value="-nosummary"/>
+			<arg value="-nonterms"/> -->
+			<arg value="Grm.cup"/>
+			<classpath>
+				<pathelement location="bin"/>
+				<pathelement path="bin"/>
+			</classpath>
+		</java>
+	</target>
+</project>

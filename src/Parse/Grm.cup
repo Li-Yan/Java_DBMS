@@ -1,0 +1,453 @@
+package Parse;
+import java_cup.runtime.Scanner;
+import Absyn.*;
+
+/* Preliminaries to set up and use the scanner.  */
+scan with {: return lexer.nextToken(); :};
+action code {:
+	static Symbol.Symbol sym(String s) {
+		return Symbol.Symbol.symbol(s);
+	}
+:};
+parser code {:
+	
+	public StmList parseResult;
+	Lexer lexer;
+	ErrorMsg.ErrorMsg errorMsg;
+	public void syntax_error(java_cup.runtime.Symbol current) {
+		report_error("Syntax error (" + symnames[current.sym] + ")", current);
+	}
+	static String symnames[] = new String[100];
+	static {
+		symnames[sym.EOF] = "EOF";
+		symnames[sym.error] = "error";
+		symnames[sym.ID] = "ID";
+		symnames[sym.STRING] = "STRING";
+		symnames[sym.DATEVAL] = "DATEVAL";
+		symnames[sym.TIMEVAL] = "TIMEVAL";
+		symnames[sym.TIMESTAMPVAL] = "TIMESTAMPVAL";
+		symnames[sym.INTVAL] = "INTVAL";
+		symnames[sym.DOUBLEVAL] = "DOUBLEVAL";
+		symnames[sym.DOT] = "DOT";
+		symnames[sym.COMMA] = "COMMA";
+		symnames[sym.SEMICOLON] = "SEMICOLON";
+		symnames[sym.LPAREN] = "LPAREN";
+		symnames[sym.RPAREN] = "RPAREN";
+		symnames[sym.STAR] = "STAR";
+		symnames[sym.EQ] = "EQ";
+		symnames[sym.NEQ] = "NEQ";
+		symnames[sym.LT] = "LT";
+		symnames[sym.LE] = "LE";
+		symnames[sym.GT] = "GT";
+		symnames[sym.GE] = "GE";
+		symnames[sym.PLUS] = "PLUS";
+		symnames[sym.MINUS] = "MINUS";
+		symnames[sym.DIVIDE] = "DIVIDE";
+		symnames[sym.CREATE] = "CREATE";
+		symnames[sym.DROP] = "DROP";
+		symnames[sym.ALTER] = "ALTER";
+		symnames[sym.ADD] = "ADD";
+		symnames[sym.DATABASE] = "DATABASE";
+		symnames[sym.USE] = "USE";
+		symnames[sym.SHOW] = "SHOW";
+		symnames[sym.TABLE] = "TABLE";
+		symnames[sym.VIEW] = "VIEW";
+		symnames[sym.INDEX] = "INDEX";
+		symnames[sym.SELECT] = "SELECT";
+		symnames[sym.INSERT] = "INSERT";
+		symnames[sym.UPDATE] = "UPDATE";
+		symnames[sym.SET] = "SET";
+		symnames[sym.DELETE] = "DELETE";
+		symnames[sym.PRIMARY] = "PRIMARY";
+		symnames[sym.KEY] = "KEY";
+		symnames[sym.UNIQUE] = "UNIQUE";
+		symnames[sym.DEFAULT] = "DEFAULT";
+		symnames[sym.FROM] = "FROM";
+		symnames[sym.WHERE] = "WHERE";
+		symnames[sym.GROUP] = "GROUP";
+		symnames[sym.ORDER] = "ORDER";
+		symnames[sym.DESC] = "DESC";
+		symnames[sym.UNION] = "UNION";
+		symnames[sym.INTERSECT] = "INTERSECT";
+		symnames[sym.EXCEPT] = "EXCEPT";
+		symnames[sym.JOIN] = "JOIN";
+		symnames[sym.CROSS] = "CROSS";
+		symnames[sym.NATURAL] = "NATURAL";
+		symnames[sym.FULL] = "FULL";
+		symnames[sym.LEFT] = "LEFT";
+		symnames[sym.RIGHT] = "RIGHT";
+		symnames[sym.HAVING] = "HAVING";
+		symnames[sym.BETWEEN] = "BETWEEN";
+		symnames[sym.AND] = "AND";
+		symnames[sym.OR] = "OR";
+		symnames[sym.NOT] = "NOT";
+		symnames[sym.VALUES] = "VALUES";
+		symnames[sym.DISTINCT] = "DISTINCT";
+		symnames[sym.ANY] = "ANY";
+		symnames[sym.ALL] = "ALL";
+		symnames[sym.NULL] = "NULL";
+		symnames[sym.TRUE] = "TRUE";
+		symnames[sym.FALSE] = "FALSE";
+		symnames[sym.UNKNOWN] = "UNKNOWN";
+		symnames[sym.ON] = "ON";
+		symnames[sym.IN] = "IN";
+		symnames[sym.AS] = "AS";
+		symnames[sym.IS] = "IS";
+		symnames[sym.BY] = "BY";
+		symnames[sym.INTO] = "INTO";
+		symnames[sym.COUNT] = "COUNT";
+		symnames[sym.SUM] = "SUM";
+		symnames[sym.AVG] = "AVG";
+		symnames[sym.MIN] = "MIN";
+		symnames[sym.MAX] = "MAX";
+		symnames[sym.BOOLEAN] = "BOOLEAN";
+		symnames[sym.INT] = "INT";
+		symnames[sym.CHAR] = "CHAR";
+		symnames[sym.VARCHAR] = "VARCHAR";
+		symnames[sym.DECIMAL] = "DECIMAL";
+		symnames[sym.DOUBLE] = "DOUBLE";		
+		symnames[sym.DATE] = "DATE";
+		symnames[sym.TIME] = "TIME";
+		symnames[sym.TIMESTAMP] = "TIMESTAMP";
+	}
+	public void report_error(String message, java_cup.runtime.Symbol info) {
+		errorMsg.error(info.left, message);
+	}
+	public Grm(Lexer l, ErrorMsg.ErrorMsg err) {
+		this((Scanner)l);
+		errorMsg=err;
+		lexer=l;
+	}
+:};
+
+/* Terminals (tokens returned by the scanner). */
+terminal String ID, STRING, DATEVAL, TIMEVAL, TIMESTAMPVAL;
+terminal Integer INTVAL;
+terminal Double DOUBLEVAL;
+terminal DOT, COMMA, SEMICOLON, LPAREN, RPAREN, STAR, 
+	EQ, NEQ, LT, LE, GT, GE, PLUS, MINUS, DIVIDE, OROR, 
+	CREATE, DROP, ALTER, ADD, DATABASE, USE, SHOW, TABLE, VIEW,
+	INDEX, SELECT, INSERT, UPDATE, SET, DELETE, PRIMARY,
+	KEY, UNIQUE, DEFAULT, FROM, WHERE, GROUP, 
+	ORDER, DESC, UNION, INTERSECT, EXCEPT, JOIN, 
+	CROSS, NATURAL, FULL, LEFT, RIGHT, HAVING,
+	BETWEEN, AND, OR, NOT, VALUES, 
+	DISTINCT, ANY, ALL, NULL, TRUE, FALSE, UNKNOWN, 
+	ON, IN, AS, IS, BY, INTO, COUNT, SUM, AVG, MIN,
+	MAX, BOOLEAN, INT, CHAR, VARCHAR, DECIMAL,
+	DOUBLE, DATE, TIME, TIMESTAMP;
+	
+/* Non terminals */
+non terminal StmList SQL_statements, stm_list;
+non terminal Stm stm;
+non terminal Query query;
+non terminal Insert insert;
+non terminal Attribute attr;
+non terminal AttributeList attr_list;
+non terminal Type type;
+non terminal Conditions conditions;
+non terminal Condition condition;
+non terminal TableList tables;
+non terminal Table table;
+non terminal FieldList field_list;
+non terminal Field field;
+non terminal IdList id_list;
+non terminal AlterTable alter;
+non terminal Const const;
+non terminal Boolean distinct_part;
+non terminal Exp exp, lvalue;
+non terminal Function function;
+non terminal CreateView create_view;
+non terminal Integer compare_op;
+non terminal OrderBy order;
+non terminal OrderByList order_list;
+non terminal ValueList value_list;
+non terminal ValuesPart values_part;
+non terminal WherePart where_part;
+non terminal OrderPart order_part;
+non terminal GroupPart group_part;
+non terminal OnPart on_part;
+non terminal HavingPart having_part;
+non terminal Update update;
+non terminal empty;
+
+/* Precedences */
+precedence left OR, OROR;
+precedence left AND;
+precedence left COMMA, OROR, RPAREN;
+precedence left UNION, INTERSECT, EXCEPT;
+precedence left PLUS, MINUS;
+precedence left STAR, DIVIDE;
+
+/* The grammar */
+start with SQL_statements;
+
+SQL_statements ::= stm_list:el {: parser.parseResult = (StmList)el; :}
+	|	empty {: parser.parseResult = null; :}
+	;
+
+stm_list ::= stm:e SEMICOLON {: RESULT = new StmList(e, null); :}
+	|	stm:e SEMICOLON stm_list:el {: RESULT = new StmList(e, el); :}
+	;
+
+stm ::= empty {: RESULT = null; :}
+	|	CREATE:c DATABASE ID:i {: RESULT = new CreateDB(cleft, sym(i)); :}
+	|	DROP:d DATABASE ID:i {: RESULT = new DropDB(dleft, sym(i)); :}
+	|	USE:u ID:i {: RESULT = new UseDB(uleft, sym(i)); :}
+	|	SHOW:s TABLE {: RESULT = new ShowTable(sleft); :}
+	|	SHOW:s VIEW {: RESULT = new ShowView(sleft); :}
+	|	CREATE:c TABLE ID:i LPAREN attr_list:al RPAREN 
+			{: RESULT = new CreateTable(cleft, sym(i), al); :}
+	|	DROP:d TABLE id_list:i {: RESULT = new DropTable(dleft, i); :}
+	|	alter:a {: RESULT = a; :}
+	|	insert:i {: RESULT = i; :}
+	|	update:u {: RESULT = u; :}
+	|	DELETE:d FROM ID:i where_part:w {: RESULT = new Delete(dleft, sym(i), w); :}
+	|	query:q {: RESULT = q; :}
+	|	create_view:c {: RESULT = c; :}
+	|	DROP:d VIEW id_list:il {: RESULT = new DropView(dleft, il); :}
+	|	CREATE:c INDEX ID:i1 ON ID:i2 LPAREN id_list:il RPAREN 
+			{: RESULT = new CreateIndex(cleft, sym(i1), sym(i2), il); :}
+	|	DROP:d INDEX ID:i ON ID:i2 {: RESULT = new DropIndex(dleft, sym(i), sym(i2)); :}
+	;
+
+alter ::= ALTER:a TABLE ID:i ADD attr:at 
+			{: RESULT = new AlterTable(aleft, sym(i), 1, new AttributeList(at, null), null); :}
+	|	ALTER:a TABLE ID:i ADD LPAREN attr_list:al RPAREN
+			{: RESULT = new AlterTable(aleft, sym(i), 1, al, null); :}
+	|	ALTER:a TABLE ID:i DROP id_list:il
+			{: RESULT = new AlterTable(aleft, sym(i), 2, null, il); :}
+	;
+insert ::= INSERT:i INTO ID:id VALUES values_part:vp
+			{: RESULT = new Insert(ileft, sym(id), 1, vp, null, null); :}
+	|	INSERT:i INTO ID:id query:q
+			{: RESULT = new Insert(ileft, sym(id), 2, null, null, q); :}
+	|	INSERT:i INTO ID:id LPAREN id_list:il RPAREN VALUES values_part:vp
+			{: RESULT = new Insert(ileft, sym(id), 3, vp, il, null); :}
+	|	INSERT:i INTO ID:id LPAREN id_list:il RPAREN query:q {::}
+			{: RESULT = new Insert(ileft, sym(id), 1, null, il, q); :}
+	;
+update ::= UPDATE:u ID:i SET lvalue:l EQ const:c where_part:w
+			{: RESULT = new Update(uleft, 1, sym(i), null, l, c, w); :}
+	|	UPDATE:u ID:i AS ID:i2 SET lvalue:l EQ const:c where_part:w
+			{: RESULT = new Update(uleft, 2, sym(i), sym(i2), l, c, w); :}
+	;
+
+query ::= LPAREN query:q RPAREN {: RESULT = q; :}
+	|	SELECT:s distinct_part:d field_list:f FROM tables:t where_part:w 
+				group_part:g having_part:h order_part:o
+			{: RESULT = new SimpleQuery(sleft, d, f, t, w, g, h, o); :}
+	|	SELECT:s distinct_part:d field_list:f FROM ID:i1 NATURAL JOIN ID:i2 on_part:o
+			{: RESULT = new JoinQuery(sleft, 1, d, f, sym(i1), sym(i2), o); :}
+	|	SELECT:s distinct_part:d field_list:f FROM ID:i1 FULL JOIN ID:i2 on_part:o
+			{: RESULT = new JoinQuery(sleft, 2, d, f, sym(i1), sym(i2), o); :}
+	|	SELECT:s distinct_part:d field_list:f FROM ID:i1 CROSS JOIN ID:i2 on_part:o
+			{: RESULT = new JoinQuery(sleft, 3, d, f, sym(i1), sym(i2), o); :}
+	|	SELECT:s distinct_part:d field_list:f FROM ID:i1 NATURAL LEFT JOIN ID:i2 on_part:o
+			{: RESULT = new JoinQuery(sleft, 4, d, f, sym(i1), sym(i2), o); :}
+	|	SELECT:s distinct_part:d field_list:f FROM ID:i1 NATURAL RIGHT JOIN ID:i2 on_part:o
+			{: RESULT = new JoinQuery(sleft, 5, d, f, sym(i1), sym(i2), o); :}
+	|	query:q1 UNION query:q2 {: RESULT = new SetQuery(q1.pos, 1, q1, q2); :}
+	|	query:q1 UNION ALL query:q2 {: RESULT = new SetQuery(q1.pos, 2, q1, q2); :}
+	|	query:q1 INTERSECT query:q2 {: RESULT = new SetQuery(q1.pos, 3, q1, q2); :}
+	|	query:q1 INTERSECT ALL query:q2 {: RESULT = new SetQuery(q1.pos, 4, q1, q2); :}
+	|	query:q1 EXCEPT query:q2 {: RESULT = new SetQuery(q1.pos, 5, q1, q2); :}
+	|	query:q1 EXCEPT ALL query:q2 {: RESULT = new SetQuery(q1.pos, 6, q1, q2); :}
+	;
+create_view ::= CREATE:c VIEW ID:i AS query:q 
+			{: RESULT = new CreateView(cleft, sym(i), null, q); :}
+	|	CREATE:c VIEW ID:i LPAREN id_list:il RPAREN AS query:q
+			{: RESULT = new CreateView(cleft, sym(i), il, q); :}
+	;
+
+attr_list ::= attr:a {: RESULT = new AttributeList(a, null); :}
+	|	attr:a COMMA attr_list:al {: RESULT = new AttributeList(a, al); :}
+	;
+attr ::= ID:i type:t 
+			{: RESULT = new Attribute(ileft, sym(i), t, false, false, null, false, null); :}
+	|	ID:i type:t NOT NULL 
+			{: RESULT = new Attribute(ileft, sym(i), t, false, true, null, false, null); :}
+	|	ID:i type:t DEFAULT const:c
+			{: RESULT = new Attribute(ileft, sym(i), t, false, false, c, false, null); :}
+	|	ID:i type:t PRIMARY KEY
+			{: RESULT = new Attribute(ileft, sym(i), t, true, false, null, false, null); :}
+	|	ID:i type:t UNIQUE
+			{: RESULT = new Attribute(ileft, sym(i), t, true, false, null, false, null); :}
+	|	PRIMARY:p KEY LPAREN id_list:il RPAREN {::}
+			{: RESULT = new Attribute(pleft, null, null, false, false, null, true, il); :}
+	;
+id_list ::= lvalue:i {: RESULT = new IdList(ileft, i, null); :}
+	|	lvalue:i COMMA id_list:il {: RESULT = new IdList(ileft, i, il); :}
+	;
+lvalue ::= ID:i {: RESULT = new ExpId(ileft, sym(i)); :}
+	|	ID:i1 DOT ID:i2 {: RESULT = new ExpIdDotId(i1left, sym(i1), sym(i2)); :}
+	;
+const ::= INTVAL:i {: RESULT = new ConstInt(ileft, sym.INTVAL, i); :}
+	|	STRING:s {: RESULT = new ConstString(sleft, sym.STRING, s); :}
+	|	TRUE:t {: RESULT = new ConstBool(tleft, sym.TRUE, 1); :}
+	|	FALSE:f {: RESULT = new ConstBool(fleft, sym.FALSE, 0); :}
+	|	NULL:i {: RESULT = new ConstNull(ileft, sym.NULL); :}
+	|	UNKNOWN:u {: RESULT = new ConstBool(uleft, sym.UNKNOWN, 2); :}
+	|	DOUBLEVAL:d {: RESULT = new ConstDouble(dleft, sym.DOUBLEVAL, d); :}
+	|	DATE:d DATEVAL:da {: RESULT = new ConstDate(dleft, sym.DATEVAL, da); :}
+	|	DATEVAL:s {: RESULT = new ConstString(sleft, sym.STRING, s); :}
+	|	TIME:t TIMEVAL:ti {: RESULT = new ConstTime(tleft, sym.TIMEVAL, ti); :}
+	|	TIMEVAL:s {: RESULT = new ConstString(sleft, sym.STRING, s); :}
+	|	TIMESTAMP:t TIMESTAMPVAL:ti 
+			{: RESULT = new ConstTimestamp(tleft, sym.TIMESTAMPVAL, ti); :}
+	|	TIMESTAMPVAL:s {: RESULT = new ConstString(sleft, sym.STRING, s); :}
+	;
+
+values_part ::= LPAREN:l value_list:vl RPAREN
+			{: RESULT = new ValuesPart(lleft, vl, null); :}
+	|	LPAREN:l value_list:vl RPAREN COMMA values_part:vp
+			{: RESULT = new ValuesPart(lleft, vl, vp); :}
+	;
+value_list ::= const:c {: RESULT = new ValueList(c, null); :}
+	|	const:c COMMA value_list:vl {: RESULT = new ValueList(c, vl); :}
+	;
+distinct_part ::= empty {: RESULT = false; :}
+	|	DISTINCT {: RESULT = true; :}
+	;
+field_list ::= field:f {: RESULT = new FieldList(f, null); :}
+	|	field:f COMMA field_list:fl {: RESULT = new FieldList(f, fl); :}
+	|	LPAREN field_list:fl RPAREN {: RESULT = fl; :}
+	;
+field ::= exp:e {: RESULT = new Field(e.pos, e, null); :}
+	|	exp:e AS ID:i {: RESULT = new Field(e.pos, e, sym(i)); :}
+	;
+tables ::= table:t {: RESULT = new TableList(t, null); :}
+	|	table:t COMMA tables:tl {: RESULT = new TableList(t, tl); :}
+	;
+table ::= ID:i {: RESULT = new Table(ileft, sym(i), null, null);:}
+	|	ID:i ID:i2 {: RESULT = new Table(ileft, sym(i), sym(i2), null);:}
+	|	ID:i AS ID:i2 {: RESULT = new Table(ileft, sym(i), sym(i2), null);:}
+	|	LPAREN:l query:q RPAREN ID:i {: RESULT = new Table(lleft, sym(i), null, q);:}
+	|	LPAREN:l query:q RPAREN AS ID:i {: RESULT = new Table(lleft, sym(i), null, q);:}
+	;
+where_part ::= empty {: RESULT = null; :}
+	|	WHERE:w conditions:c {: RESULT = new WherePart(wleft, c); :}
+	;
+group_part ::= empty {: RESULT = null; :}
+	|	GROUP:g BY id_list:il {: RESULT = new GroupPart(gleft, il); :}
+	;
+having_part ::= empty {: RESULT = null; :}
+	|	HAVING:h conditions:c {: RESULT = new HavingPart(hleft, c); :}
+	;
+order_part ::= empty {: RESULT = null; :}
+	|	ORDER:o BY order_list:ol {: RESULT = new OrderPart(oleft, ol); :}
+	;
+on_part ::= empty {: RESULT = null; :}
+	|	ON:o conditions:c {: RESULT = new OnPart(oleft, c); :}
+	;
+
+order_list ::= order:o {: RESULT = new OrderByList(o, null); :}
+	|	order:o COMMA order_list:ol {: RESULT = new OrderByList(o, ol); :}
+	;
+order ::= exp:e {: RESULT = new OrderBy(e.pos, e, false); :}
+	|	exp:e DESC {: RESULT = new OrderBy(e.pos, e, true); :}
+	;
+
+conditions ::= condition:c {: RESULT = new Conditions(c, null, 0, null); :}
+	|	conditions:c AND conditions:cs {: RESULT = new Conditions(null, c, 1, cs); :}
+	|	conditions:c OR conditions:cs {: RESULT = new Conditions(null, c, 2, cs); :}
+	|	conditions:c OROR conditions:cs {: RESULT = new Conditions(null, c, 2, cs); :}
+	|	NOT conditions:c {: RESULT = new Conditions(null, c, 3, null); :}
+	|	LPAREN conditions:c RPAREN {: RESULT = c; :}
+	;
+condition ::= exp:e1 compare_op:o exp:e2
+			{: RESULT = new Condition(e1.pos, 1, o, e1, e2, null, null, null); :}
+	|	exp:e compare_op:o LPAREN query:q RPAREN
+			{: RESULT = new Condition(e.pos, 2, o, e, null, null, q, null); :}
+	|	LPAREN:l query:q RPAREN compare_op:o exp:e
+			{: RESULT = new Condition(lleft, 3, o, e, null, null, q, null); :}
+	|	LPAREN:l query:q1 RPAREN compare_op:o LPAREN query:q2 RPAREN
+			{: RESULT = new Condition(lleft, 4, o, (Exp)null, null, null, q1, q2); :}
+	|	exp:e compare_op:o ANY LPAREN query:q RPAREN
+			{: RESULT = new Condition(e.pos, 5, o, e, null, null, q, null); :}
+	|	exp:e compare_op:o ALL LPAREN query:q RPAREN
+			{: RESULT = new Condition(e.pos, 6, o, e, null, null, q, null); :}
+	|	field_list:fl IN LPAREN query:q RPAREN
+			{: 	ExpList el = null, tail = null;
+				while (fl != null) {
+					Field f = fl.head;
+					if (f.refname != null)
+						System.err.println("Wrong ExpList!");
+					Exp exp = f.exp;
+					ExpList tmp = new ExpList(exp, null);
+					if (el == null)
+						el = tail = tmp;
+					else
+						tail = tail.tail = tmp;
+					fl = fl.tail;
+				}
+				RESULT = new Condition(el.head.pos, 7, -1, el, null, null, q, null); 
+			:}
+	|	field_list:fl NOT IN LPAREN query:q RPAREN
+			{: 	ExpList el = null, tail = null;
+				while (fl != null) {
+					Field f = fl.head;
+					if (f.refname != null)
+						System.err.println("Wrong ExpList!");
+					Exp exp = f.exp;
+					ExpList tmp = new ExpList(exp, null);
+					if (el == null)
+						el = tail = tmp;
+					else
+						tail = tail.tail = tmp;
+					fl = fl.tail;
+				}
+				RESULT = new Condition(el.head.pos, 8, -1, el, null, null, q, null); 
+			:}
+	|	exp:e IS NULL
+			{: RESULT = new Condition(e.pos, 9, -1, e, null, null, null, null); :}
+	|	exp:e IS NOT NULL
+			{: RESULT = new Condition(e.pos, 10, -1, e, null, null, null, null); :}
+	|	exp:e1 BETWEEN exp:e2 AND exp:e3
+			{: RESULT = new Condition(e1.pos, 11, -1, e1, e2, e3, null, null); :}
+	;
+
+exp ::= lvalue:l {: RESULT = l; :}
+	|	STAR:s {: RESULT = new ExpStar(sleft); :}
+	|	function:f {: RESULT = f; :}
+	|	const:c {: RESULT = c; :}
+	|	exp:e1 PLUS exp:e2 {: RESULT = new ExpOp(1, e1, e2); :}
+	|	exp:e1 MINUS exp:e2 {: RESULT = new ExpOp(2, e1, e2); :}
+	|	exp:e1 STAR exp:e2 {: RESULT = new ExpOp(3, e1, e2); :}
+	|	exp:e1 DIVIDE exp:e2 {: RESULT = new ExpOp(4, e1, e2); :}
+	|	exp:e1 OROR exp:e2 {: RESULT = new ExpOp(5, e1, e2); :}
+	|	LPAREN exp:e RPAREN {: RESULT = e; :}
+	;
+
+function ::= AVG:a LPAREN distinct_part:d exp:e RPAREN
+			{: RESULT = new Function(aleft, sym.AVG, d, e); :}
+	|	SUM:s LPAREN distinct_part:d exp:e RPAREN
+			{: RESULT = new Function(sleft, sym.SUM, d, e); :}
+	|	COUNT:c LPAREN distinct_part:d exp:e RPAREN
+			{: RESULT = new Function(cleft, sym.COUNT, d, e); :}
+	|	MIN:m LPAREN distinct_part:d exp:e RPAREN
+			{: RESULT = new Function(mleft, sym.MIN, d, e); :}
+	|	MAX:m LPAREN distinct_part:d exp:e RPAREN
+			{: RESULT = new Function(mleft, sym.MAX, d, e); :}
+	;
+
+compare_op ::= EQ {: RESULT = sym.EQ; :}
+	|	NEQ {: RESULT = sym.NEQ; :}
+	|	GT {: RESULT = sym.GT; :}
+	|	GE {: RESULT = sym.GE; :}
+	|	LT {: RESULT = sym.LT; :}
+	|	LE {: RESULT = sym.LE; :}
+	;
+
+type ::= BOOLEAN:t {: RESULT = new Type(tleft, sym.BOOLEAN); :}
+	|	INT:t {: RESULT = new Type(tleft, sym.INT); :}
+	|	CHAR:t {: RESULT = new CharType(tleft, sym.CHAR, 1); :}
+	|	CHAR:t LPAREN INTVAL:i RPAREN {: RESULT = new CharType(tleft, sym.CHAR, i); :}
+	|	VARCHAR:t LPAREN INTVAL:i RPAREN {: RESULT = new CharType(tleft, sym.VARCHAR, i); :}
+	|	DECIMAL:t LPAREN INTVAL:i1 COMMA INTVAL:i2 RPAREN {: RESULT = new DecimalType(tleft, sym.DECIMAL, i1, i2); :}
+	|	DOUBLE:t {: RESULT = new Type(tleft, sym.DOUBLE); :}
+	|	DATE:t {: RESULT = new Type(tleft, sym.DATE); :}
+	|	TIME:t {: RESULT = new Type(tleft, sym.TIME); :}
+	;
+	
+empty ::= ;
